@@ -46,9 +46,11 @@ const oauthRoutes = require("./Routes/oauth-routes"); // Google OAuth
 const app = express();
 
 // ------------------ Security Middlewares ------------------
-const frontendOrigin = (process.env.FRONTEND_URL || "http://localhost:3000").trim();
+const frontendOrigin = (
+  process.env.FRONTEND_URL || "http://localhost:3000"
+).trim();
 
-app.disable('x-powered-by');
+app.use(helmet.hidePoweredBy());
 
 app.use(
   helmet({
@@ -56,7 +58,11 @@ app.use(
       useDefaults: true,
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "https://apis.google.com", "https://www.gstatic.com"],
+        scriptSrc: [
+          "'self'",
+          "https://apis.google.com",
+          "https://www.gstatic.com",
+        ],
         styleSrc: ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
         fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "https://lh3.googleusercontent.com"],
@@ -72,6 +78,13 @@ app.use(
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // HSTS
   })
 );
+// 4. Cache-control for sensitive routes (example for login & payment APIs)
+app.use(["/Login", "/Payment"], (req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  next();
+});
 
 app.use(helmet.noSniff());
 
@@ -81,7 +94,6 @@ app.use(mongoSanitize());
 
 // ------------------ Static Files ------------------
 app.use(express.static(path.join(__dirname, "public")));
-
 
 // ------------------ CORS ------------------
 app.use(
@@ -161,16 +173,16 @@ app.use("/Invoice", InvoiceRoute);
 // Google OAuth
 app.use("/auth", oauthRoutes);
 
-
-
 app.get("/product/:id", (req, res) => {
   // Block all scripts with CSP
-  res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'none'");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'none'"
+  );
 
   // Serve the product page (React or static HTML)
   res.sendFile(path.join(__dirname, "public", "product.html"));
 });
-
 
 // ------------------ Authenticated User Endpoint ------------------
 app.get("/me", (req, res) => {
@@ -182,11 +194,14 @@ app.get("/me", (req, res) => {
   res.status(401).json({ user: null });
 });
 
-    // With CSP: script should be blocked
-    app.get("/withcsp", (req, res) => {
-      // CSP blocks scripts from anywhere other than 'self'
-      res.setHeader("Content-Security-Policy", "default-src 'self'; script-src 'none'");
-      res.send(`
+// With CSP: script should be blocked
+app.get("/withcsp", (req, res) => {
+  // CSP blocks scripts from anywhere other than 'self'
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'none'"
+  );
+  res.send(`
         <html>
           <body>
             <h1>Test Page - With CSP</h1>
@@ -195,7 +210,7 @@ app.get("/me", (req, res) => {
           </body>
         </html>
       `);
-    });
+});
 
 // No CSP: script should run
 app.get("/nocsp", (req, res) => {
@@ -209,7 +224,6 @@ app.get("/nocsp", (req, res) => {
     </html>
   `);
 });
-
 
 // ------------------ 404 ------------------
 app.use((req, res) => {
@@ -226,7 +240,7 @@ mongoose
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // helmet for secure headers
-const helmet = require('helmet');
+const helmet = require("helmet");
 app.use(helmet());
 
 // Global error handler - this should be the last middleware
@@ -235,6 +249,6 @@ app.use((err, req, res, next) => {
 
   res.status(err && err.status ? err.status : 500).json({
     success: false,
-    message: "Something went wrong. Please try again later."
+    message: "Something went wrong. Please try again later.",
   });
 });
