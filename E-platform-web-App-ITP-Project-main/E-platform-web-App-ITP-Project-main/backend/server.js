@@ -64,7 +64,12 @@ app.use(
     },
   })
 );
-
+app.use(
+  helmet({
+    frameguard: { action: "sameorigin" }, // X-Frame-Options
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // HSTS
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(mongoSanitize());
