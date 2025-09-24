@@ -224,3 +224,17 @@ mongoose
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT} 🔥`));
   })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// helmet for secure headers
+const helmet = require('helmet');
+app.use(helmet());
+
+// Global error handler - this should be the last middleware
+app.use((err, req, res, next) => {
+  console.error("ERROR:", err && err.stack ? err.stack : err);
+
+  res.status(err && err.status ? err.status : 500).json({
+    success: false,
+    message: "Something went wrong. Please try again later."
+  });
+});
