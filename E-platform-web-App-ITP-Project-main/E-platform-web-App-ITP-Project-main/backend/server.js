@@ -48,6 +48,8 @@ const app = express();
 // ------------------ Security Middlewares ------------------
 const frontendOrigin = (process.env.FRONTEND_URL || "http://localhost:3000").trim();
 
+app.disable('x-powered-by');
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -70,6 +72,9 @@ app.use(
     hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, // HSTS
   })
 );
+
+app.use(helmet.noSniff());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(mongoSanitize());
